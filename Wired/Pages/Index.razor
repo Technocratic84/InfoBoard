@@ -1,0 +1,145 @@
+﻿@page "/{AutoNavOff:int?}"
+@inject ILogger<Index> Logger;
+@inject IDbContextFactory<InfoDBcontext> localInfoContextFactory
+@inject NavigationManager NavMan
+@inject InfoGlobalClass IGC;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@inject IHttpContextAccessor HttpContextAccessor
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage BrowserStorage
+
+<a href="#top1" class="scroll-to-top"></a>
+<div id="top1"></div>
+
+<div class="container">
+    <h1>
+        Choose which marquee to assign to this device @clientIPstring
+    </h1>
+
+    @foreach (var item in MarqueeItemList)
+    {
+        <a class="btn chooser-button" @onclick="() => NavigateToMarquee(item)">
+            @item.MarqueeDescription
+        </a>
+    }
+
+    <SiteMessage />
+</div>          
+
+@code {
+    [Parameter]
+    public int? AutoNavOff { get; set; }
+    public string clientIPstring;
+
+    private class MarqueeItem
+    {
+        public int? MarqueeIndex { get; set; }
+        public string MarqueeDescription { get; set; }
+    }
+
+    private List<MarqueeItem> MarqueeItemList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation(": Home screen :");
+
+        // get current IP
+        System.Net.IPAddress? clientIP = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress;
+        //clientIPstring = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+        clientIPstring = clientIP.ToString();
+        if (clientIP.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+        {
+            clientIPstring = System.Net.Dns.GetHostEntry(clientIP).AddressList
+                .First(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString();
+        }
+        Logger.LogInformation("IP = " + clientIPstring);
+
+        // create list of available marqueees
+        MarqueeItemList = new List<MarqueeItem>();
+        var localInfoContext = localInfoContextFactory.CreateDbContext();
+        foreach (var marq in localInfoContext.InfoBoardData)
+        {
+            MarqueeItem mi = new MarqueeItem();
+            mi.MarqueeIndex = marq.InfoBoardDataIndex;
+            mi.MarqueeDescription = marq.InfoBoardDescription;
+            MarqueeItemList.Add(mi);
+        }
+
+        // check if current IP is in device table
+        if ((AutoNavOff == 0 || AutoNavOff == null) && localInfoContext.InfoBoardDevices.Select(x => x.IPaddress == clientIPstring).Count() > 0)
+        {
+            if (localInfoContext.InfoBoardDevices.Where(x => x.IPaddress == clientIPstring).FirstOrDefault() != null)
+            {
+                int? ThisBoardIndex = localInfoContext.InfoBoardDevices.Where(x => x.IPaddress == clientIPstring).First().BoardDataIndex;
+                if (ThisBoardIndex > 0)
+                {
+                    MarqueeItem mi = MarqueeItemList.Where(x => x.MarqueeIndex == ThisBoardIndex).First();
+                    NavigateToMarquee(mi);
+                }
+            }
+        }
+
+        //// timer for Refresh every 6 minutes
+        //var timer2 = new System.Timers.Timer(6 * 60 * 1000);
+        //timer2.Elapsed += (sender, args) =>
+        //{
+        //    InvokeAsync(() =>
+        //    {
+        //        NavMan.NavigateTo(NavMan.Uri, true); // Refresh the page
+        //    });
+        //};
+        //timer2.Start();
+    }
+
+    private async Task NavigateToMarquee(MarqueeItem item)
+    {
+        var localInfoContext = localInfoContextFactory.CreateDbContext();
+        if (clientIPstring != "")
+        {
+            await BrowserStorage.SetAsync("thisip", clientIPstring);
+        }
+
+        int Type = localInfoContext.InfoBoardData.Where(x => x.InfoBoardDataIndex == item.MarqueeIndex).Select(x => x.InfoBoardType).First();
+
+        var thisdev = localInfoContext.InfoBoardDevices.Where(x => x.IPaddress == clientIPstring).FirstOrDefault();
+        if (thisdev != null)
+        {
+            //UPDATE DEFAULT
+            localInfoContext.InfoBoardDevices.Where(x => x.IPaddress == clientIPstring).FirstOrDefault().BoardDataIndex = (int)item.MarqueeIndex;
+            localInfoContext.SaveChanges();
+        }
+        else
+        {
+            //ADD NEW RECORD
+            InfoBoardDevices dev = new InfoBoardDevices();
+            dev.IPaddress = clientIPstring;
+            dev.BoardDataIndex = (int)item.MarqueeIndex;            
+            localInfoContext.InfoBoardDevices.Add(dev);
+            localInfoContext.SaveChanges();
+        }
+
+        switch (Type)
+        {
+            case 1:
+                // HANDSTACK
+                NavMan.NavigateTo($"/mqhs/{item.MarqueeIndex}");
+                break;
+            case 2:
+                // PALLET TIME
+                NavMan.NavigateTo($"/mqpallettime/{item.MarqueeIndex}");
+                break;
+            case 3:
+                // STATUS
+                //  NavMan.NavigateTo($"/XXXXXXXX/");
+                break;
+            case 4:
+                // ALL HS
+                NavMan.NavigateTo($"/mqallhs/");
+                break;
+            default:
+                // how did we get here?
+                Logger.LogInformation(" wut? ");
+                break;
+        }
+    }
+}

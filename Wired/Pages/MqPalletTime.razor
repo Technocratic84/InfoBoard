@@ -1,0 +1,159 @@
+﻿@page "/mqpallettime/{CurrentBoardIndex:int}"
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager NavMan
+@inject InfoBoard.Services.InfoService infoService;
+@using InfoBoard.Data;
+@inject IDbContextFactory<InfoDBcontext> localInfoContextFactory
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage BrowserStorage
+
+<PageTitle>Pallet Time</PageTitle>
+
+@if (dataLines is null || (dataLines.Count == 0))
+{
+    <div>loading...</div>
+    <div class="spinner"></div>
+}
+else
+{
+    <div class="IP">@IpAddress</div>
+    <br/>
+    <div class="containerx">
+        <div class="topscreen">
+            <div class="leftthird">
+                <div> </div>
+                <div div class="type"><div class="banner4">@dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().InfoBoardDescription  </div></div>
+            </div>
+            <div class="righttwothirds">
+                <div class="banner4">Current Wait Time</div>
+                <div class="banner7"> @elapsedTimeDisplay </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div class="bottomscreen">
+            <div class="banner3 sides">
+                <br />
+                <div class="title">Pallets Waiting</div>
+                <br />
+            </div>
+            <div class="banner5 sides">
+                @*Pallets Waiting count*@
+                <div class="title">@dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().Data01 </div>
+
+                <div class="progress" style="height: 45px; width: 50em; vertical-align: middle; ">
+                    @*Pallets Waiting meter*@
+                    @if (@LagWarningThreshhold > int.Parse(@dataLines.Where(x => x.InfoBoardDataIndex == CurrentBoardIndex).FirstOrDefault().Data01))
+                    {
+                        <div class="progress-bar" role="progressbar" style="width: @dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().Data01%; border-color:aliceblue" aria-valuenow=@dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().Data01 aria-valuemin=0 aria-valuemax=25></div>
+                    }
+                    else
+                    {
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: @dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().Data01%; border-color:aliceblue" aria-valuenow=@dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().Data01 aria-valuemin="0" aria-valuemax="25"></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="bottomscreen">
+            <div class="banner3 sides">
+                <div class="title">Avg Wait Time</div>
+            </div>
+            <div class="banner3 sides">
+                @*Average Wait Time*@
+                <br />
+                <div class="banner3">@dataLines.Where(x=>x.InfoBoardDataIndex==CurrentBoardIndex).FirstOrDefault().Data02</div>
+                <br />
+            </div>
+        </div>
+
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public int CurrentBoardIndex { get; set; }
+    private List<InfoBoardData> dataLines = new List<InfoBoardData>();
+    private HubConnection? hubConnection;
+    private string elapsedTimeDisplay = "0:00";
+    private int? LagWarningThreshhold;
+    private System.Timers.Timer timer;
+    private string IpAddress;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var localInfoContext = localInfoContextFactory.CreateDbContext();
+        LagWarningThreshhold = localInfoContext.InfoBoardSettings.Where(x => x.SettingDescription == "LagWarningThreshholdPallets").FirstOrDefault().SettingValueInt ;
+        if (LagWarningThreshhold == null)
+        {
+            LagWarningThreshhold = 20;
+        }
+
+        // Initialize timer for display
+        timer = new System.Timers.Timer(300);
+        timer.Elapsed += UpdateElapsedTime;
+        timer.Start();
+
+        dataLines = await infoService.GetPalletsWaiting();
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavMan.ToAbsoluteUri("/infohub"))
+        .Build();
+
+        hubConnection.On<List<InfoBoardData>>("UpdateWait", WaitLines =>
+        {
+            dataLines = WaitLines;
+            InvokeAsync(StateHasChanged);
+        });
+
+        // timer for Refresh every 56 seconds
+        //var timer2 = new System.Timers.Timer(56000);
+        //timer2.Elapsed += (sender, args) =>
+        //{
+        //    if (!string.IsNullOrEmpty(NavMan.Uri))
+        //    {
+        //        InvokeAsync(() =>
+        //        {
+        //            NavMan.NavigateTo(NavMan.Uri, true); // Refresh the page
+        //        });
+        //    }
+        //    else
+        //    {
+        //        SiteMessage.GlobalMessage = "Couldn't refresh";
+
+        //    }
+        //};
+        //timer2.Start();
+
+        await hubConnection.StartAsync();
+    }
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (IpAddress == null || IpAddress == "")
+        {
+            var result = await BrowserStorage.GetAsync<string>("thisip");
+            IpAddress = result.Success ? result.Value : "";
+        }
+    }
+
+    private void UpdateElapsedTime(object source, System.Timers.ElapsedEventArgs e)
+    {
+        TimeSpan elapsedTime = DateTime.Now - (dataLines.Where(x => x.InfoBoardDataIndex == CurrentBoardIndex).FirstOrDefault().Time) ?? TimeSpan.Zero;
+        double totalSeconds = elapsedTime.TotalSeconds;
+
+        if (totalSeconds > 999)
+        {
+            elapsedTimeDisplay = "999+";
+        }
+        else
+        {
+            elapsedTimeDisplay = totalSeconds.ToString("0.0");
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+}

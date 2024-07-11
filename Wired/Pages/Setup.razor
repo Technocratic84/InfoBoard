@@ -1,0 +1,53 @@
+﻿@page "/setup"
+@inject NavigationManager NavMan
+@inject ILogger<Index> Logger;
+@inject InfoGlobalClass IGC;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Setup</PageTitle>
+
+<h1 class="h1-gears" font-size="72">
+    System Setup & Options
+</h1>
+<br />
+<br />
+@*<h3 style="color:aliceblue"> this is @clientIpAddress</h3>*@
+
+<br />
+<br />
+<br />
+
+<div class="container">
+    <table>
+        <tbody>
+            <tr>
+                <td><button class="btn btn-success btn-lg float-left p-3" style="width:100%" @onclick="@GotoDevices">Devices </button></td>          
+            </tr>
+            <br />    
+            <br />
+            <br />          
+        </tbody>
+    </table>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <SiteMessage />
+</div>
+
+@code {       
+    protected override async Task OnParametersSetAsync()
+    {
+        // var localRerunContext = localRerunContextFactory.CreateDbContext();       
+    }
+
+    private async Task GotoDevices()
+    {
+        SiteMessage.GlobalMessage = "";
+        NavMan.NavigateTo($"/editdevices");
+    }
+
+}

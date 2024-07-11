@@ -1,0 +1,65 @@
+﻿@page "/testconnections"
+@inject IDbContextFactory<InfoDBcontext> localRerunContextFactory
+@inject NavigationManager NavMan
+
+<PageTitle>Test DB Connections</PageTitle>
+
+<h1 class="h1-db">Test DB Connections</h1>
+
+<table class="table table-striped" border-spacing="100px; 0px;">
+    <tbody>
+        <tr align="right">
+            <td align="left">Snowflake</td>
+            <td align="center">@CheckSnowflake</td>
+        </tr>
+        <tr align="right">
+            <td align="left">VPS</td>
+            <td align="center">@CheckVPS</td>
+        </tr>
+        <tr align="right">
+            <td align="left">VPS Archive</td>
+            <td align="center">@CheckVPSArchive</td>
+        </tr>
+    </tbody>
+</table>
+
+@if (!@IsDone)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <button class="btn btn-success btn-lg float-right" @onclick="@HandleDone">OK</button>
+}
+
+<SiteMessage />
+
+@code {
+    private string CheckSnowflake { get; set; } = "Checking...";
+    private string CheckVPS { get; set; } = "Checking...";
+    private string CheckVPSArchive { get; set; } = "Checking...";
+    private bool IsDone { get; set; } = false;
+
+    // OnParametersSetAsync is called on component initialize, and anytime a parameter is changed.
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            var localRerunContext = await localRerunContextFactory.CreateDbContextAsync();
+            
+            
+        }
+        catch (Exception ex)
+        {
+            CheckSnowflake = "Failed";
+            Console.WriteLine("Error reading Snowflake DB : " + ex.Message);
+        }
+
+        
+    }
+       
+    private async Task HandleDone()
+    {
+        NavMan.NavigateTo("/setup");
+    }
+}

@@ -1,0 +1,8 @@
+﻿{
+  "name": "Fullscreen Webpage",
+  "short_name": "Fullscreen",
+  "description": "A fullscreen web page on Android.",
+  "start_url": "/index.html",
+  "display": "standalone",      
+  ]
+}

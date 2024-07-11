@@ -1,0 +1,136 @@
+﻿@page "/mqallhs/"
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager NavMan
+@inject InfoBoard.Services.InfoService infoService;
+@using InfoBoard.Data;
+@inject IDbContextFactory<InfoDBcontext> localInfoContextFactory
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage BrowserStorage
+
+<PageTitle>all HS</PageTitle>
+
+@*<head>
+    <meta http-equiv="refresh" content="32">
+</head>*@
+
+@if (dataLines is null)
+{
+    <div>loading...</div>
+    <div class="spinner"></div>
+}
+else
+{
+    <div class="IP">@IpAddress</div>
+    <table class="table">
+        <thead>
+            <tr>
+                @foreach (var hs in dataLines.Where(x => x.Data01Note == "current pallet"))
+                {
+                    @*<th> <div class="banner5 border-right">@hs.InfoBoardDescription </div> </th>*@
+
+                    @if (@LagWarningThreshhold > ((int.Parse(@dataLines.Where(x => x.InfoBoardType == 1).Max(x => x.Data01)))) - int.Parse(hs.Data01))
+                    {
+                        <th>
+                            <div class="banner5 border-right">@hs.InfoBoardDescription</div>
+                        </th>
+                    }
+                    else
+                    {
+                        <th>
+                            <div class="banner5red border-right">@hs.InfoBoardDescription</div>
+                        </th>
+                    }
+                }
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                @foreach (var hs in dataLines.Where(x => x.Data01Note == "current pallet"))
+                {
+                    <td> <div class="banner5 border-right"> &nbsp </div> </td>
+                }
+            </tr>
+
+            <tr>
+                @foreach (var hs in dataLines.Where(x => x.Data01Note == "current pallet"))
+                {
+
+                    @if (@LagWarningThreshhold > ((int.Parse(@dataLines.Where(x => x.InfoBoardType == 1).Max(x => x.Data01)))) - int.Parse(hs.Data01))
+                    {
+                        <td>
+                            <div class="banner7  border-right">@hs.Data01</div>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>
+                            <div class="banner7red border-right">@hs.Data01</div>
+                        </td>
+                    }
+                }
+            </tr>
+        </tbody>
+    </table>
+    <SiteMessage />
+}
+
+@code {
+    private List<InfoBoardData> dataLines = new List<InfoBoardData>();
+    private HubConnection? hubConnection;
+    private int? LagWarningThreshhold;
+    private string IpAddress;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var localInfoContext = localInfoContextFactory.CreateDbContext();
+        LagWarningThreshhold = localInfoContext.InfoBoardSettings.Where(x => x.SettingDescription == "LagWarningThreshholdHS").FirstOrDefault().SettingValueInt;
+        if (LagWarningThreshhold == null)
+        {
+            LagWarningThreshhold = 20;
+        }
+
+        dataLines = await infoService.GetHS();
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavMan.ToAbsoluteUri("/infohub"))
+        .Build();
+
+        hubConnection.On<List<InfoBoardData>>("UpdateHandstack", HsLines =>
+        {
+            dataLines = HsLines;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+
+        // timer for Refresh every 52 seconds
+        //var timer2 = new System.Timers.Timer(52000);
+        //timer2.Elapsed += (sender, args) =>
+        //{
+        //    if (!string.IsNullOrEmpty(NavMan.Uri))
+        //    {
+        //        InvokeAsync(() =>
+        //        {
+        //            NavMan.NavigateTo(NavMan.Uri, true); // Refresh the page
+        //        });
+        //    }
+        //    else
+        //    {
+        //        SiteMessage.GlobalMessage = "Couldn't refresh";
+                
+        //    }
+        //};
+        //timer2.Start();
+    }
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (IpAddress == null || IpAddress == "")
+        {
+            var result = await BrowserStorage.GetAsync<string>("thisip");
+            IpAddress = result.Success ? result.Value : "";
+        }
+    }
+}

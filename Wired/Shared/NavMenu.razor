@@ -1,0 +1,33 @@
+﻿
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid justify-content-center">
+        <a class="navbar-brand" href="">
+            <img src="images/CCBCC-logo-1-1.png" class="logo" />
+            <div class=container2>InfoBoard</div>
+            <div class=container3>Version @version</div>
+        </a>
+    </div>
+</div>
+
+<div>
+    <nav class="flex-column">
+
+        <div class="nav-item">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home"></span>
+                <label> &nbsp Home</label>
+            </NavLink>
+        </div>
+
+        <div class="nav-item">
+            <NavLink class="nav-link" href="setup" Match="NavLinkMatch.All">
+                <span class="oi oi-cog"></span>
+                <label>  &nbsp Setup</label>
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    Version version = typeof(Program).Assembly.GetName().Version;
+}

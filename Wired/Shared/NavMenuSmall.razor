@@ -1,0 +1,25 @@
+﻿@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage BrowserStorage
+
+<div>
+    <nav class="flex-column">
+        <div class="version">@version</div>
+        <br/>
+        
+        <div class="nav-item">
+            <NavLink class="nav-link" href="/1" Match="NavLinkMatch.All">
+                <span class="oi oi-home"></span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item">
+            <NavLink class="nav-link" href="setup" Match="NavLinkMatch.All">
+                <span class="oi oi-cog"></span>
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    Version version = typeof(Program).Assembly.GetName().Version;    
+}

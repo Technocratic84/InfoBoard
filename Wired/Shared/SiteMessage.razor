@@ -1,0 +1,34 @@
+﻿<div class="text-center" >
+     <br />
+    @if (GlobalMessage != "")
+    {
+        <br />
+        <div class="alert alert-success" @onclick=@Dismiss>@GlobalMessage</div>
+        <br />       
+    }
+</div>
+
+@code
+{
+    public static string GlobalMessage = "";    
+    private static DateTime LastChange = DateTime.Now;
+
+    protected override void OnAfterRender(bool firstRender)
+    {        
+        StateHasChanged();
+        if (LastChange <= DateTime.Now.AddSeconds(-10))
+        {
+            GlobalMessage = ""; // disappear after a short time            
+        }        
+    }
+
+    protected override async Task OnParametersSetAsync()    
+    {
+        LastChange = DateTime.Now;
+    }
+
+    private async Task Dismiss()
+    {
+        GlobalMessage = ""; // user can click to dismiss
+    }
+}

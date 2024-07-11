@@ -1,0 +1,83 @@
+﻿@page "/editdevice/{thisDeviceID:int}/"
+@inject IDbContextFactory<InfoDBcontext> localInfoContextFactory
+@inject NavigationManager NavMan
+
+<PageTitle>Edit Device</PageTitle>
+
+<h1>Edit Device</h1>
+
+<h2>
+    <div>@NewDev.IPaddress</div>
+    <div>@NewDev.DeviceDescription </div>
+    <div>@NewDev.BoardType </div>
+</h2>
+
+<button class="btn btn-success btn-lg float-right" @onclick="@HandleSave">Save</button>
+
+@code {
+    [Parameter]
+    public int? thisDeviceID { get; set; }
+
+    private class DeviceTypes
+    {
+        public int TypeIndex { get; set; }
+        public string? TypeDescription { get; set; }
+    }
+
+    private class LocalDevice
+    {
+        public int DeviceIndex { get; set; }
+        public string IPaddress { get; set; }
+        public string? DeviceDescription { get; set; }
+        public string BoardType { get; set; }
+    }
+
+    private List<DeviceTypes> LocalTypeList { get; set; }
+    LocalDevice NewDev { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var localInfoContext = localInfoContextFactory.CreateDbContext();
+
+        LocalTypeList = new List<DeviceTypes>();
+        var AllTypes = localInfoContext.InfoBoardTypes.ToArray();
+
+        if (thisDeviceID != 0)
+        {
+            InfoBoardDevices ThisDevice = localInfoContext.InfoBoardDevices.Where(x => x.InfoBoardDeviceIndex == thisDeviceID).FirstOrDefault();
+
+            NewDev = new LocalDevice();
+            NewDev.DeviceIndex = ThisDevice.InfoBoardDeviceIndex;
+            NewDev.DeviceDescription = ThisDevice.Description;            
+            NewDev.IPaddress = ThisDevice.IPaddress;
+            NewDev.BoardType = AllTypes.Where(x => x.InfoBoardTypeIndex == ThisDevice.BoardDataIndex).FirstOrDefault().InfoBoardDescription;
+        }
+        else
+        {
+            // ADD mode
+            // fill in default values
+        }
+
+    }
+
+    private async Task HandleSave()
+    {      
+
+    }
+
+    private async Task HandleSubmit()
+    {
+        var localRerunContext = localInfoContextFactory.CreateDbContext();
+
+        //localVpsContext.SaveChanges();
+
+        //Global Message
+
+        NavMan.NavigateTo("/editdevices");
+    }
+
+    private async Task HandleCancel()
+    {     
+        NavMan.NavigateTo("/editdevices");
+    }
+}

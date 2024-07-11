@@ -1,0 +1,86 @@
+.navbar-toggler {
+    background-color: green;    
+}
+
+.top-row {
+    height: 190px;
+    background-color: darkgreen;    
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;    
+}
+
+.bottom-row {
+    position: absolute;
+    bottom: 0;
+    padding-bottom: 10px;
+    text-align: right;
+    width: 100%;
+    padding-right: 28px;
+}
+
+.icon-menu-arrow {
+    text-align: right;
+}
+
+
+/* home icon*/
+.oi {
+    width: 2rem;
+    font-size: 2.2rem;
+    vertical-align: text-top;
+    text-align: center;
+    top: -2px;
+    /* margin-right: 1.5rem;*/
+}
+
+.logo {
+    height: 100px;
+    display: block;
+    margin: auto;
+}
+
+.nav-item {
+    font-size: 1.9rem;
+    padding-bottom: 0.5rem;
+    background-color: darkgreen;
+    color: white;
+}
+
+    .nav-item:first-of-type {
+        padding-top: 1rem;
+    }
+
+    .nav-item:last-of-type {
+        padding-bottom: 1rem;
+    }
+
+    /*size of large home button on side*/
+    .nav-item ::deep a {
+        color: white;
+        border-radius: 4px;
+        height: 20rem;
+        display: flex;
+        align-items: center;
+        line-height: 3rem;
+        padding-left: 2rem;
+    }
+
+        .nav-item ::deep a:hover {
+            color: darkgreen;
+            background-color: yellow;
+            border: double;
+        }
+
+@media (min-width: 641px) {
+    .navbar-toggler {
+        display: none;
+    }
+
+    /*.collapse {*/
+        /* Never collapse the sidebar for wide screens */
+        /*display: block;
+    }*/
+}

@@ -1,0 +1,47 @@
+
+.top-row {
+    height: 150px;
+    background-color: darkgreen;    
+}
+
+/* home icon*/
+.oi {
+    width: 1rem;
+    font-size: 2.0rem;
+    vertical-align: text-top;
+    text-align: center;
+    top: -2px;
+    /* margin-right: 1.5rem;*/
+}
+
+.nav-item {
+    font-size: 1.1rem;
+    padding-bottom: 0.5rem;
+    background-color: black;
+    color: white;
+}
+
+    .nav-item:first-of-type {
+        padding-top: 1rem;
+    }
+
+    .nav-item:last-of-type {
+        padding-bottom: 1rem;
+    }
+
+    /*size of large home button on side*/
+    .nav-item ::deep a {
+        color: darkslategrey;
+        border-radius: 2px;
+        height: 10rem;
+        display: flex;
+        align-items: center;
+        line-height: 2rem;
+        padding-left: 1rem;
+    }
+
+        .nav-item ::deep a:hover {
+            color: black;
+            background-color: darkseagreen;
+        }
+

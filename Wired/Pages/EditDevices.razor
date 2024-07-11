@@ -1,0 +1,101 @@
+﻿@page "/editdevices"
+@inject IDbContextFactory<InfoDBcontext> localInfoContextFactory
+@inject NavigationManager NavMan
+
+<PageTitle>Edit Devices</PageTitle>
+
+<h1>Edit Devices</h1>
+
+<button class="btn btn-success btn-lg float-right" @onclick="@HandleAdd">Add New</button>
+
+<table class="table text-white " border-spacing="50px; 0px;"  >
+    <thead>
+        <tr>
+            @*<th style="text-align: right">xyz</th>*@
+            <th>IP address</th>
+            <th>Device name</th>
+            <th>Function</th>
+            <th>     </th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var dev in LocalDeviceList)
+        {
+            <tr style="text-align: right">
+                <td style="text-align: left">@dev.IPaddress</td>
+                <td align="left">@dev.DeviceDescription </td>
+                <td align="left">@dev.BoardType </td>                
+                <td>
+                    <a href="/editdevice/@dev.DeviceIndex"
+                       class="btn btn-info btn-lg">
+                        Edit
+                    </a>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn btn-success btn-lg float-right" @onclick="@HandleDone">Done</button>
+
+@code {
+    private class LocalDevice
+    {
+        public int DeviceIndex { get; set; }
+        public string IPaddress { get; set; }
+        public string? DeviceDescription { get; set; }        
+        public string BoardType { get; set; }
+    }
+
+    private class DeviceTypes
+    {
+        public int TypeIndex { get; set; }        
+        public string? TypeDescription { get; set; }        
+    }
+
+    private List<LocalDevice> LocalDeviceList { get; set; }
+    private List<DeviceTypes> LocalTypeList { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            var localInfoContext = localInfoContextFactory.CreateDbContext();
+
+            LocalTypeList = new List<DeviceTypes>();
+            var AllTypes = localInfoContext.InfoBoardTypes.ToArray();
+
+            var AllDevices = localInfoContext.InfoBoardDevices.ToArray();
+            LocalDeviceList = new List<LocalDevice>();
+
+            foreach (var dev in AllDevices)
+            {
+                LocalDevice NewDev = new LocalDevice();
+                NewDev.DeviceIndex = dev.InfoBoardDeviceIndex;
+                NewDev.DeviceDescription = dev.Description;
+                NewDev.IPaddress = dev.IPaddress;
+                NewDev.BoardType = AllTypes.Where(x => x.InfoBoardTypeIndex == dev.BoardDataIndex).FirstOrDefault().InfoBoardDescription;
+
+                LocalDeviceList.Add(NewDev);
+            }
+
+            LocalDeviceList = LocalDeviceList.OrderBy(x => x.DeviceDescription).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error getting devices : " + ex.Message);
+        }
+    }
+
+    private void HandleAdd()
+    {        
+        NavMan.NavigateTo("/editdevice/0");
+    }
+
+    private async Task HandleDone()
+    {
+        NavMan.NavigateTo("/");
+    }
+}
